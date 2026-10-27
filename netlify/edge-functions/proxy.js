@@ -1,7 +1,6 @@
 export default async (request, context) => {
   const url = new URL(request.url);
   
-  // إذا لم يكن المسار /proxy، نمرر الطلب كالمعتاد
   if (!url.pathname.startsWith('/proxy')) {
     return context.next();
   }
@@ -30,17 +29,11 @@ export default async (request, context) => {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
     });
     const html = await res.text();
-    
-    // البحث عن رابط m3u8
     const match = html.match(/(https?:\/\/[^"']+\.m3u8[^"']*)/);
-    if (match) {
-      m3u8 = match[1];
-    }
-  } catch (err) {
-    console.error('VidLink error:', err.message);
-  }
+    if (match) m3u8 = match[1];
+  } catch (err) {}
 
-  // 2. Vidsrc.icu (احتياطي)
+  // 2. Vidsrc.icu
   if (!m3u8) {
     try {
       const embedUrl = type === 'movie'
@@ -51,17 +44,11 @@ export default async (request, context) => {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
       });
       const html = await res.text();
-      
       const match = html.match(/(https?:\/\/[^"']+\.m3u8[^"']*)/);
-      if (match) {
-        m3u8 = match[1];
-      }
-    } catch (err) {
-      console.error('Vidsrc error:', err.message);
-    }
+      if (match) m3u8 = match[1];
+    } catch (err) {}
   }
 
-  // إرجاع النتيجة
   if (m3u8) {
     return new Response(JSON.stringify({ m3u8 }), {
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
@@ -74,5 +61,4 @@ export default async (request, context) => {
   });
 };
 
-// نجعله يعمل فقط على مسار /proxy لتجنب تعارض مع باقي الموقع
 export const config = { path: "/proxy" };
